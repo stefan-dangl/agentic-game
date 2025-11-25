@@ -6,6 +6,15 @@
   const tileW = 96;
   const tileH = 48;
 
+  const offsetX = ((cols - 1) * tileW) / 2;
+
+  function toIso(x, y) {
+    return {
+      x: (x - y) * (tileW / 2) + offsetX,
+      y: (x + y) * (tileH / 2)
+    };
+  }
+
   const obstaclePositions = new Set(['3,3', '4,3', '5,4', '2,6', '6,2']);
 
   const tiles = Array.from({ length: rows * cols }, (_, index) => {
@@ -23,15 +32,6 @@
 
   let player = { x: 1, y: 1 };
   let status = 'Use WASD or arrow keys to move';
-
-  const offsetX = ((cols - 1) * tileW) / 2;
-
-  function toIso(x, y) {
-    return {
-      x: (x - y) * (tileW / 2) + offsetX,
-      y: (x + y) * (tileH / 2)
-    };
-  }
 
   function isBlocked(x, y) {
     if (x < 0 || y < 0 || x >= cols || y >= rows) return true;
