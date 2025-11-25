@@ -112,6 +112,7 @@
     { id: 'e3', x: 6, y: 20, stunnedUntil: 0 }
   ];
   let enemyInterval;
+  let enemiesKilled = 0;
   let viewOriginX = 0;
   let viewOriginY = 0;
   let viewTiles = [];
@@ -130,6 +131,15 @@
     return x >= 0 && y >= 0 && x < worldCols && y < worldRows;
   }
 
+  function triggerGameOver(message = 'Game Over') {
+    gameOver = true;
+    status = message;
+  }
+
+  function enemyOnTile(x, y) {
+    return enemies.some((enemy) => enemy.x === x && enemy.y === y);
+  }
+
   function attemptMove(dx, dy) {
     if (gameOver) return;
     const nextX = player.x + dx;
@@ -139,13 +149,16 @@
       return;
     }
     if (isHole(nextX, nextY)) {
-      gameOver = true;
-      status = 'Game Over';
+      triggerGameOver();
       return;
     }
     player = { x: nextX, y: nextY };
     lastMoveDir = [dx, dy];
     refreshView();
+    if (enemyOnTile(player.x, player.y)) {
+      triggerGameOver();
+      return;
+    }
     status = 'Walking...';
   }
 
@@ -176,6 +189,10 @@
 
     player = { x: landingX, y: landingY };
     refreshView();
+    if (enemyOnTile(player.x, player.y)) {
+      triggerGameOver();
+      return;
+    }
     status = isHole(midX, midY) ? 'You leapt over a hole!' : 'Jump!';
 
     isJumping = true;
@@ -223,6 +240,7 @@
 
   function chasePlayer() {
     if (gameOver) return;
+    let killedThisTick = 0;
     enemies = enemies
       .map((enemy) => {
         if (Date.now() < enemy.stunnedUntil) return enemy;
@@ -233,10 +251,17 @@
         const targetY = enemy.y + dy;
         if (!inBounds(targetX, targetY)) return enemy;
         if (isBlocked(targetX, targetY)) return enemy;
-        if (isHole(targetX, targetY)) return null;
+        if (isHole(targetX, targetY)) {
+          killedThisTick += 1;
+          return null;
+        }
         return { ...enemy, x: targetX, y: targetY };
       })
       .filter(Boolean);
+    enemiesKilled += killedThisTick;
+    if (enemyOnTile(player.x, player.y)) {
+      triggerGameOver();
+    }
   }
 
   onMount(() => {
@@ -287,9 +312,12 @@
     const localX = enemy.x - viewOriginX;
     const localY = enemy.y - viewOriginY;
     const iso = toIsoLocal(localX, localY);
+    const baseX = iso.x + tileW / 2;
+    const baseY = iso.y + tileH / 2;
+    const enemyHeight = tileH * 1.5;
     return {
-      x: iso.x + tileW / 2,
-      y: iso.y + tileH / 2
+      x: baseX,
+      y: baseY - enemyHeight / 2
     };
   }
 
@@ -354,6 +382,7 @@
     if (isBlocked(targetX, targetY)) return { ...enemy, stunnedUntil: Date.now() + 1000 };
     if (isHole(targetX, targetY)) {
       enemies = enemies.filter((e) => e.id !== enemy.id);
+      enemiesKilled += 1;
       return null;
     }
     return { ...enemy, x: targetX, y: targetY, stunnedUntil: Date.now() + 1000 };
@@ -403,6 +432,7 @@
         <span class="pill">Space to jump</span>
         <span class="pill">Holes end the run</span>
         <span class="pill">Only nearby 8x8 tiles render</span>
+        <span class="pill">Kills: {enemiesKilled}</span>
       </div>
 
       <div

@@ -200,17 +200,18 @@ header .lede {
 .enemy {
   position: absolute;
   width: var(--tile-w);
-  height: calc(var(--tile-h) * 1.6);
-  transform: translate(var(--tx), var(--ty)) translateY(-18px);
+  height: calc(var(--tile-h) * 1.5);
+  transform: translate(calc(var(--tx) + var(--tile-w) / 2), calc(var(--ty) + var(--tile-h) / 2))
+    translate(-50%, -100%);
   pointer-events: none;
 }
 
 .enemy .enemy-body {
   position: absolute;
-  bottom: 10px;
+  bottom: 4px;
   left: 50%;
   width: 44px;
-  height: 70px;
+  height: 64px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
   border-radius: 12px 12px 10px 10px;
