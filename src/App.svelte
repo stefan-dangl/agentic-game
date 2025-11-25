@@ -19,9 +19,14 @@
   }
 
   const obstaclePositions = new Set();
+  const holePositions = new Set();
 
   function addObstacle(x, y) {
     obstaclePositions.add(`${x},${y}`);
+  }
+
+  function addHole(x, y) {
+    holePositions.add(`${x},${y}`);
   }
 
   // Generate a few clusters of rocks across the larger map.
@@ -78,8 +83,18 @@
     [2, 9]
   ].forEach(([x, y]) => addObstacle(x, y));
 
+  // Carve out a few holes.
+  [
+    [9, 9],
+    [4, 14],
+    [15, 8],
+    [19, 19],
+    [8, 4]
+  ].forEach(([x, y]) => addHole(x, y));
+
   let player = { x: 1, y: 1 };
   let status = 'Use WASD or arrow keys to move';
+  let gameOver = false;
   let viewOriginX = 0;
   let viewOriginY = 0;
   let viewTiles = [];
@@ -90,11 +105,21 @@
     return obstaclePositions.has(`${x},${y}`);
   }
 
+  function isHole(x, y) {
+    return holePositions.has(`${x},${y}`);
+  }
+
   function attemptMove(dx, dy) {
+    if (gameOver) return;
     const nextX = player.x + dx;
     const nextY = player.y + dy;
     if (isBlocked(nextX, nextY)) {
       status = 'You bumped into an obstacle';
+      return;
+    }
+    if (isHole(nextX, nextY)) {
+      gameOver = true;
+      status = 'Game Over';
       return;
     }
     player = { x: nextX, y: nextY };
@@ -149,6 +174,7 @@
           localX,
           localY,
           isObstacle: obstaclePositions.has(`${worldX},${worldY}`),
+          isHole: holePositions.has(`${worldX},${worldY}`),
           screen: toIsoLocal(localX, localY),
           z: localX + localY
         });
@@ -175,34 +201,39 @@
   </header>
 
   <section class="world-panel">
-    <div class="hud">
-      <span class="pill">WASD / Arrow keys</span>
-      <span class="pill">Obstacles block movement</span>
-      <span class="pill">Only nearby 8x8 tiles render</span>
-    </div>
-
-    <div
-      class="world"
-      style={`--tile-w:${tileW}px; --tile-h:${tileH}px; --cols:${viewSize}; --rows:${viewSize};`}
-    >
-      {#each viewTiles as tile (tile.id)}
-        <div
-          class={`tile ${tile.isObstacle ? 'obstacle' : ''}`}
-          style={`--tx:${tile.screen.x}px; --ty:${tile.screen.y}px; z-index:${tile.z};`}
-        />
-      {/each}
+    {#if gameOver}
+      <div class="game-over">Game Over</div>
+    {:else}
+      <div class="hud">
+        <span class="pill">WASD / Arrow keys</span>
+        <span class="pill">Obstacles block movement</span>
+        <span class="pill">Holes end the run</span>
+        <span class="pill">Only nearby 8x8 tiles render</span>
+      </div>
 
       <div
-        class="player"
-        style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
+        class="world"
+        style={`--tile-w:${tileW}px; --tile-h:${tileH}px; --cols:${viewSize}; --rows:${viewSize};`}
       >
-        <div class="shadow" />
-        <div class="body">
-          <div class="head" />
+        {#each viewTiles as tile (tile.id)}
+          <div
+            class={`tile ${tile.isObstacle ? 'obstacle' : ''} ${tile.isHole ? 'hole' : ''}`}
+            style={`--tx:${tile.screen.x}px; --ty:${tile.screen.y}px; z-index:${tile.z};`}
+          />
+        {/each}
+
+        <div
+          class="player"
+          style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
+        >
+          <div class="shadow" />
+          <div class="body">
+            <div class="head" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <p class="status">{status}</p>
+      <p class="status">{status}</p>
+    {/if}
   </section>
 </main>
