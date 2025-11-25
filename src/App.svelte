@@ -107,9 +107,9 @@
   let aimAngle = 0;
   let worldEl;
   let enemies = [
-    { id: 'e1', x: 10, y: 10 },
-    { id: 'e2', x: 18, y: 6 },
-    { id: 'e3', x: 6, y: 20 }
+    { id: 'e1', x: 10, y: 10, stunnedUntil: 0 },
+    { id: 'e2', x: 18, y: 6, stunnedUntil: 0 },
+    { id: 'e3', x: 6, y: 20, stunnedUntil: 0 }
   ];
   let enemyInterval;
   let viewOriginX = 0;
@@ -225,6 +225,7 @@
     if (gameOver) return;
     enemies = enemies
       .map((enemy) => {
+        if (Date.now() < enemy.stunnedUntil) return enemy;
         const dx = Math.sign(player.x - enemy.x);
         const dy = Math.sign(player.y - enemy.y);
         if (dx === 0 && dy === 0) return enemy;
@@ -240,7 +241,7 @@
 
   onMount(() => {
     window.addEventListener('keydown', handleKey);
-    enemyInterval = setInterval(chasePlayer, 600);
+    enemyInterval = setInterval(chasePlayer, 900);
   });
 
   onDestroy(() => {
@@ -350,12 +351,12 @@
     const targetX = enemy.x + stepX;
     const targetY = enemy.y + stepY;
     if (!inBounds(targetX, targetY)) return enemy;
-    if (isBlocked(targetX, targetY)) return enemy;
+    if (isBlocked(targetX, targetY)) return { ...enemy, stunnedUntil: Date.now() + 1000 };
     if (isHole(targetX, targetY)) {
       enemies = enemies.filter((e) => e.id !== enemy.id);
       return null;
     }
-    return { ...enemy, x: targetX, y: targetY };
+    return { ...enemy, x: targetX, y: targetY, stunnedUntil: Date.now() + 1000 };
   }
 
   function handleShotHits(shot) {
