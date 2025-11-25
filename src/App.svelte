@@ -32,6 +32,14 @@
     holePositions.add(`${x},${y}`);
   }
 
+  function baseEnemies() {
+    return [
+      { id: 'e1', x: 21, y: 11, stunnedUntil: 0 },
+      { id: 'e2', x: 17, y: 4, stunnedUntil: 0 },
+      { id: 'e3', x: 6, y: 18, stunnedUntil: 0 }
+    ];
+  }
+
   // Generate a few clusters of rocks across the larger map.
   const clusters = [
     [
@@ -95,29 +103,25 @@
     [8, 4]
   ].forEach(([x, y]) => addHole(x, y));
 
-  let player = { x: 1, y: 1 };
-  let status = '';
-  let gameOver = false;
-  let isJumping = false;
-  let lastMoveDir = null;
+  let player;
+  let status;
+  let gameOver;
+  let isJumping;
+  let lastMoveDir;
   let jumpTimeout;
-  let shots = [];
-  let shotTimeouts = new Map();
-  let aimPos = { x: 0, y: 0 };
-  let aimAngle = 0;
+  let shots;
+  let shotTimeouts;
+  let aimPos;
+  let aimAngle;
   let worldEl;
-  let enemies = [
-    { id: 'e1', x: 10, y: 10, stunnedUntil: 0 },
-    { id: 'e2', x: 18, y: 6, stunnedUntil: 0 },
-    { id: 'e3', x: 6, y: 20, stunnedUntil: 0 }
-  ];
+  let enemies;
   let enemyInterval;
   let enemySpawnInterval;
-  let enemiesKilled = 0;
-  let viewOriginX = 0;
-  let viewOriginY = 0;
-  let viewTiles = [];
-  let playerLocal = { x: 0, y: 0 };
+  let enemiesKilled;
+  let viewOriginX;
+  let viewOriginY;
+  let viewTiles;
+  let playerLocal;
 
   function isBlocked(x, y) {
     if (x < 0 || y < 0 || x >= worldCols || y >= worldRows) return true;
@@ -141,12 +145,34 @@
     return enemies.some((enemy) => enemy.x === x && enemy.y === y);
   }
 
+  function resetGame() {
+    clearTimeout(jumpTimeout);
+    if (shotTimeouts) {
+      shotTimeouts.forEach((id) => clearTimeout(id));
+    }
+    shots = [];
+    shotTimeouts = new Map();
+    player = { x: 1, y: 1 };
+    status = '';
+    gameOver = false;
+    isJumping = false;
+    lastMoveDir = null;
+    aimPos = { x: 0, y: 0 };
+    aimAngle = 0;
+    enemies = baseEnemies();
+    enemiesKilled = 0;
+    viewOriginX = 0;
+    viewOriginY = 0;
+    viewTiles = [];
+    playerLocal = { x: 0, y: 0 };
+    refreshView();
+  }
+
   function attemptMove(dx, dy) {
     if (gameOver) return;
     const nextX = player.x + dx;
     const nextY = player.y + dy;
     if (isBlocked(nextX, nextY)) {
-      status = 'You bumped into an obstacle';
       return;
     }
     if (isHole(nextX, nextY)) {
@@ -426,7 +452,7 @@
       .filter(Boolean);
   }
 
-  refreshView();
+  resetGame();
 </script>
 
 <main class="app">
@@ -438,7 +464,11 @@
 
   <section class="world-panel">
     {#if gameOver}
-      <div class="game-over">Game Over</div>
+      <div class="game-over">
+        <div class="go-title">Game Over</div>
+        <p class="go-sub">Kills: {enemiesKilled}</p>
+        <button class="retry-btn" type="button" on:click={resetGame}>Retry</button>
+      </div>
     {:else}
       <div class="hud">
         <span class="pill">Kills: {enemiesKilled}</span>
