@@ -1,6 +1,6 @@
-# Basic executable Svelte example
+# Codex Agentic AI experiment
 
-This repository contains a minimal Svelte + Vite setup you can run locally without additional scaffolding tools.
+Goal of this repo is to create a (not too) simple game in Svelte using only AI coding tools (no manual coding)
 
 ## Getting started
 1. Install dependencies:
@@ -20,5 +20,3 @@ This repository contains a minimal Svelte + Vite setup you can run locally witho
    ```bash
    npm run preview -- --host
    ```
-
-The example component renders a greeting, lets you update the displayed name, and includes a reactive click counter.
