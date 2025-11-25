@@ -24,9 +24,11 @@
   let player = { x: 1, y: 1 };
   let status = 'Use WASD or arrow keys to move';
 
+  const offsetX = ((cols - 1) * tileW) / 2;
+
   function toIso(x, y) {
     return {
-      x: (x - y) * (tileW / 2),
+      x: (x - y) * (tileW / 2) + offsetX,
       y: (x + y) * (tileH / 2)
     };
   }
