@@ -96,7 +96,7 @@
   ].forEach(([x, y]) => addHole(x, y));
 
   let player = { x: 1, y: 1 };
-  let status = 'Use WASD or arrow keys to move';
+  let status = '';
   let gameOver = false;
   let isJumping = false;
   let lastMoveDir = null;
@@ -112,6 +112,7 @@
     { id: 'e3', x: 6, y: 20, stunnedUntil: 0 }
   ];
   let enemyInterval;
+  let enemySpawnInterval;
   let enemiesKilled = 0;
   let viewOriginX = 0;
   let viewOriginY = 0;
@@ -159,7 +160,6 @@
       triggerGameOver();
       return;
     }
-    status = 'Walking...';
   }
 
   function attemptJump() {
@@ -193,7 +193,6 @@
       triggerGameOver();
       return;
     }
-    status = isHole(midX, midY) ? 'You leapt over a hole!' : 'Jump!';
 
     isJumping = true;
     clearTimeout(jumpTimeout);
@@ -238,6 +237,23 @@
     }
   }
 
+  function spawnEnemy() {
+    if (gameOver) return;
+    const maxAttempts = 100;
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const x = Math.floor(Math.random() * worldCols);
+      const y = Math.floor(Math.random() * worldRows);
+      const occupied =
+        isBlocked(x, y) ||
+        isHole(x, y) ||
+        (player.x === x && player.y === y) ||
+        enemies.some((enemy) => enemy.x === x && enemy.y === y);
+      if (occupied) continue;
+      enemies = [...enemies, { id: crypto.randomUUID(), x, y, stunnedUntil: 0 }];
+      return;
+    }
+  }
+
   function chasePlayer() {
     if (gameOver) return;
     let killedThisTick = 0;
@@ -267,6 +283,7 @@
   onMount(() => {
     window.addEventListener('keydown', handleKey);
     enemyInterval = setInterval(chasePlayer, 900);
+    enemySpawnInterval = setInterval(spawnEnemy, 10000);
   });
 
   onDestroy(() => {
@@ -274,6 +291,7 @@
     clearTimeout(jumpTimeout);
     shotTimeouts.forEach((id) => clearTimeout(id));
     clearInterval(enemyInterval);
+    clearInterval(enemySpawnInterval);
   });
 
   function viewStart(center, maxStart) {
@@ -368,7 +386,6 @@
       shotTimeouts.delete(shot.id);
     }, SHOT_DURATION);
     shotTimeouts.set(shot.id, timeout);
-    status = 'Bang!';
   }
 
   function knockbackEnemy(enemy, angle) {
@@ -414,9 +431,9 @@
 
 <main class="app">
   <header>
-    <p class="eyebrow">Isometric survival</p>
+    <p class="eyebrow">Control with WASD and SPACE</p>
     <h1>Cave Survival</h1>
-    <p class="lede">Keep moving, mind the holes, and see how many foes the caverns claim.</p>
+    <p class="lede">Keep moving, mind the holes, and survive the enemies.</p>
   </header>
 
   <section class="world-panel">
