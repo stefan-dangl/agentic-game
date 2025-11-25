@@ -6,6 +6,7 @@
   const viewSize = 8;
   const tileW = 96;
   const tileH = 48;
+  const JUMP_DURATION = 280;
 
   const maxViewStartX = worldCols - viewSize;
   const maxViewStartY = worldRows - viewSize;
@@ -95,6 +96,9 @@
   let player = { x: 1, y: 1 };
   let status = 'Use WASD or arrow keys to move';
   let gameOver = false;
+  let isJumping = false;
+  let lastMoveDir = null;
+  let jumpTimeout;
   let viewOriginX = 0;
   let viewOriginY = 0;
   let viewTiles = [];
@@ -123,12 +127,55 @@
       return;
     }
     player = { x: nextX, y: nextY };
+    lastMoveDir = [dx, dy];
     refreshView();
     status = 'Walking...';
   }
 
+  function attemptJump() {
+    if (gameOver) return;
+    if (!lastMoveDir) {
+      status = 'Jump after moving to set a direction';
+      return;
+    }
+    const [dx, dy] = lastMoveDir;
+    const midX = player.x + dx;
+    const midY = player.y + dy;
+    const landingX = player.x + dx * 2;
+    const landingY = player.y + dy * 2;
+
+    if (isBlocked(midX, midY) || isBlocked(landingX, landingY)) {
+      status = 'Too tall to jump over';
+      return;
+    }
+    if (landingX < 0 || landingY < 0 || landingX >= worldCols || landingY >= worldRows) {
+      status = 'Edge is too far';
+      return;
+    }
+    if (isHole(landingX, landingY)) {
+      status = 'Cannot land in a hole';
+      return;
+    }
+
+    player = { x: landingX, y: landingY };
+    refreshView();
+    status = isHole(midX, midY) ? 'You leapt over a hole!' : 'Jump!';
+
+    isJumping = true;
+    clearTimeout(jumpTimeout);
+    jumpTimeout = setTimeout(() => {
+      isJumping = false;
+    }, JUMP_DURATION);
+  }
+
   function handleKey(event) {
     const key = event.key.toLowerCase();
+    if (key === ' ' || event.code === 'Space') {
+      event.preventDefault();
+      attemptJump();
+      return;
+    }
+
     const moveMap = {
       w: [0, -1],
       arrowup: [0, -1],
@@ -153,6 +200,7 @@
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKey);
+    clearTimeout(jumpTimeout);
   });
 
   function viewStart(center, maxStart) {
@@ -207,6 +255,7 @@
       <div class="hud">
         <span class="pill">WASD / Arrow keys</span>
         <span class="pill">Obstacles block movement</span>
+        <span class="pill">Space to jump</span>
         <span class="pill">Holes end the run</span>
         <span class="pill">Only nearby 8x8 tiles render</span>
       </div>
@@ -222,14 +271,14 @@
           />
         {/each}
 
-        <div
-          class="player"
-          style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
-        >
-          <div class="shadow" />
-          <div class="body">
-            <div class="head" />
-          </div>
+      <div
+        class={`player ${isJumping ? 'jumping' : ''}`}
+        style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
+      >
+        <div class="shadow" />
+        <div class="body">
+          <div class="head" />
+        </div>
         </div>
       </div>
 
