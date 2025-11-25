@@ -80,6 +80,10 @@
 
   let player = { x: 1, y: 1 };
   let status = 'Use WASD or arrow keys to move';
+  let viewOriginX = 0;
+  let viewOriginY = 0;
+  let viewTiles = [];
+  let playerLocal = { x: 0, y: 0 };
 
   function isBlocked(x, y) {
     if (x < 0 || y < 0 || x >= worldCols || y >= worldRows) return true;
@@ -94,6 +98,7 @@
       return;
     }
     player = { x: nextX, y: nextY };
+    refreshView();
     status = 'Walking...';
   }
 
@@ -129,17 +134,17 @@
     return Math.max(0, Math.min(center - Math.floor(viewSize / 2) + 1, maxStart));
   }
 
-  $: viewOriginX = viewStart(player.x, maxViewStartX);
-  $: viewOriginY = viewStart(player.y, maxViewStartY);
+  function refreshView() {
+    viewOriginX = viewStart(player.x, maxViewStartX);
+    viewOriginY = viewStart(player.y, maxViewStartY);
 
-  function buildViewTiles() {
-    const tiles = [];
+    const nextTiles = [];
     for (let localY = 0; localY < viewSize; localY += 1) {
       for (let localX = 0; localX < viewSize; localX += 1) {
         const worldX = viewOriginX + localX;
         const worldY = viewOriginY + localY;
 
-        tiles.push({
+        nextTiles.push({
           id: `${worldX}-${worldY}`,
           localX,
           localY,
@@ -149,14 +154,14 @@
         });
       }
     }
-    return tiles;
+    viewTiles = nextTiles;
+    playerLocal = {
+      x: player.x - viewOriginX,
+      y: player.y - viewOriginY
+    };
   }
 
-  $: viewTiles = buildViewTiles();
-  $: playerLocal = {
-    x: player.x - viewOriginX,
-    y: player.y - viewOriginY
-  };
+  refreshView();
 </script>
 
 <main class="app">
