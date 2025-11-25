@@ -261,6 +261,15 @@
     };
   }
 
+  function muzzlePoint(angle) {
+    const center = playerScreenCenter();
+    const offset = 24;
+    return {
+      x: center.x + Math.cos(angle) * offset,
+      y: center.y + Math.sin(angle) * offset
+    };
+  }
+
   function updateAimFromMouse(clientX, clientY) {
     if (!worldEl) return;
     const rect = worldEl.getBoundingClientRect();
@@ -272,13 +281,13 @@
   function shoot(clientX, clientY) {
     if (gameOver) return;
     updateAimFromMouse(clientX, clientY);
-    const center = playerScreenCenter();
+    const start = muzzlePoint(aimAngle);
     const dx = Math.cos(aimAngle);
     const dy = Math.sin(aimAngle);
     const shot = {
       id: crypto.randomUUID(),
-      x: center.x,
-      y: center.y,
+      x: start.x,
+      y: start.y,
       angle: aimAngle,
       length: SHOT_LENGTH,
       dx,
