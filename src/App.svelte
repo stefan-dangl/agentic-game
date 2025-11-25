@@ -7,6 +7,8 @@
   const tileW = 96;
   const tileH = 48;
   const JUMP_DURATION = 280;
+  const SHOT_DURATION = 250;
+  const SHOT_LENGTH = 260;
 
   const maxViewStartX = worldCols - viewSize;
   const maxViewStartY = worldRows - viewSize;
@@ -99,6 +101,11 @@
   let isJumping = false;
   let lastMoveDir = null;
   let jumpTimeout;
+  let shots = [];
+  let shotTimeouts = new Map();
+  let aimPos = { x: 0, y: 0 };
+  let aimAngle = 0;
+  let worldEl;
   let viewOriginX = 0;
   let viewOriginY = 0;
   let viewTiles = [];
@@ -194,6 +201,16 @@
     }
   }
 
+  function handleMouseMove(event) {
+    updateAimFromMouse(event.clientX, event.clientY);
+  }
+
+  function handleMouseDown(event) {
+    if (event.button === 0) {
+      shoot(event.clientX, event.clientY);
+    }
+  }
+
   onMount(() => {
     window.addEventListener('keydown', handleKey);
   });
@@ -201,6 +218,7 @@
   onDestroy(() => {
     window.removeEventListener('keydown', handleKey);
     clearTimeout(jumpTimeout);
+    shotTimeouts.forEach((id) => clearTimeout(id));
   });
 
   function viewStart(center, maxStart) {
@@ -235,6 +253,46 @@
     };
   }
 
+  function playerScreenCenter() {
+    const iso = toIsoLocal(playerLocal.x, playerLocal.y);
+    return {
+      x: iso.x + tileW / 2,
+      y: iso.y + tileH / 2
+    };
+  }
+
+  function updateAimFromMouse(clientX, clientY) {
+    if (!worldEl) return;
+    const rect = worldEl.getBoundingClientRect();
+    aimPos = { x: clientX - rect.left, y: clientY - rect.top };
+    const center = playerScreenCenter();
+    aimAngle = Math.atan2(aimPos.y - center.y, aimPos.x - center.x);
+  }
+
+  function shoot(clientX, clientY) {
+    if (gameOver) return;
+    updateAimFromMouse(clientX, clientY);
+    const center = playerScreenCenter();
+    const dx = Math.cos(aimAngle);
+    const dy = Math.sin(aimAngle);
+    const shot = {
+      id: crypto.randomUUID(),
+      x: center.x,
+      y: center.y,
+      angle: aimAngle,
+      length: SHOT_LENGTH,
+      dx,
+      dy
+    };
+    shots = [...shots, shot];
+    const timeout = setTimeout(() => {
+      shots = shots.filter((s) => s.id !== shot.id);
+      shotTimeouts.delete(shot.id);
+    }, SHOT_DURATION);
+    shotTimeouts.set(shot.id, timeout);
+    status = 'Bang!';
+  }
+
   refreshView();
 </script>
 
@@ -263,22 +321,35 @@
       <div
         class="world"
         style={`--tile-w:${tileW}px; --tile-h:${tileH}px; --cols:${viewSize}; --rows:${viewSize};`}
+        bind:this={worldEl}
+        on:mousemove={handleMouseMove}
+        on:mousedown={handleMouseDown}
+        role="presentation"
+        aria-label="Isometric world"
       >
         {#each viewTiles as tile (tile.id)}
           <div
             class={`tile ${tile.isObstacle ? 'obstacle' : ''} ${tile.isHole ? 'hole' : ''}`}
             style={`--tx:${tile.screen.x}px; --ty:${tile.screen.y}px; z-index:${tile.z};`}
+        />
+      {/each}
+
+        {#each shots as shot (shot.id)}
+          <div
+            class="shot"
+            style={`left:${shot.x}px; top:${shot.y}px; width:${shot.length}px; transform:rotate(${shot.angle}rad);`}
           />
         {/each}
 
-      <div
-        class={`player ${isJumping ? 'jumping' : ''}`}
-        style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
-      >
-        <div class="shadow" />
-        <div class="body">
-          <div class="head" />
-        </div>
+        <div
+          class={`player ${isJumping ? 'jumping' : ''}`}
+          style={`--tx:${toIsoLocal(playerLocal.x, playerLocal.y).x}px; --ty:${toIsoLocal(playerLocal.x, playerLocal.y).y}px; z-index:${playerLocal.x + playerLocal.y + 10};`}
+        >
+          <div class="shadow" />
+          <div class="body">
+            <div class="gun" style={`transform: translate(-50%, -50%) rotate(${aimAngle}rad);`} />
+            <div class="head" />
+          </div>
         </div>
       </div>
 

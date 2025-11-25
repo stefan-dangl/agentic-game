@@ -157,6 +157,18 @@ header .lede {
   border: 2px solid rgba(8, 145, 178, 0.35);
 }
 
+.player .gun {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  width: 48px;
+  height: 12px;
+  background: linear-gradient(90deg, #0f172a 0%, #1e293b 60%, #94a3b8 100%);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  transform-origin: 12px 6px;
+}
+
 .player .head {
   position: absolute;
   top: -26px;
@@ -183,6 +195,17 @@ header .lede {
   100% {
     transform: translate(var(--tx), var(--ty)) translateY(-24px);
   }
+}
+
+.shot {
+  position: absolute;
+  height: 4px;
+  background: linear-gradient(90deg, #f8fafc 0%, #38bdf8 60%, #06b6d4 100%);
+  border-radius: 3px;
+  transform-origin: 0 50%;
+  filter: drop-shadow(0 2px 6px rgba(6, 182, 212, 0.8));
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .status {
