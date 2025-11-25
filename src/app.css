@@ -197,6 +197,27 @@ header .lede {
   }
 }
 
+.enemy {
+  position: absolute;
+  width: var(--tile-w);
+  height: calc(var(--tile-h) * 1.6);
+  transform: translate(var(--tx), var(--ty)) translateY(-18px);
+  pointer-events: none;
+}
+
+.enemy .enemy-body {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 44px;
+  height: 70px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+  border-radius: 12px 12px 10px 10px;
+  box-shadow: 0 10px 20px rgba(234, 88, 12, 0.4);
+  border: 2px solid rgba(249, 115, 22, 0.35);
+}
+
 .shot {
   position: absolute;
   height: 4px;

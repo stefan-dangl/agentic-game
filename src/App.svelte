@@ -106,6 +106,12 @@
   let aimPos = { x: 0, y: 0 };
   let aimAngle = 0;
   let worldEl;
+  let enemies = [
+    { id: 'e1', x: 10, y: 10 },
+    { id: 'e2', x: 18, y: 6 },
+    { id: 'e3', x: 6, y: 20 }
+  ];
+  let enemyInterval;
   let viewOriginX = 0;
   let viewOriginY = 0;
   let viewTiles = [];
@@ -118,6 +124,10 @@
 
   function isHole(x, y) {
     return holePositions.has(`${x},${y}`);
+  }
+
+  function inBounds(x, y) {
+    return x >= 0 && y >= 0 && x < worldCols && y < worldRows;
   }
 
   function attemptMove(dx, dy) {
@@ -211,14 +221,33 @@
     }
   }
 
+  function chasePlayer() {
+    if (gameOver) return;
+    enemies = enemies
+      .map((enemy) => {
+        const dx = Math.sign(player.x - enemy.x);
+        const dy = Math.sign(player.y - enemy.y);
+        if (dx === 0 && dy === 0) return enemy;
+        const targetX = enemy.x + dx;
+        const targetY = enemy.y + dy;
+        if (!inBounds(targetX, targetY)) return enemy;
+        if (isBlocked(targetX, targetY)) return enemy;
+        if (isHole(targetX, targetY)) return null;
+        return { ...enemy, x: targetX, y: targetY };
+      })
+      .filter(Boolean);
+  }
+
   onMount(() => {
     window.addEventListener('keydown', handleKey);
+    enemyInterval = setInterval(chasePlayer, 600);
   });
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKey);
     clearTimeout(jumpTimeout);
     shotTimeouts.forEach((id) => clearTimeout(id));
+    clearInterval(enemyInterval);
   });
 
   function viewStart(center, maxStart) {
@@ -250,6 +279,16 @@
     playerLocal = {
       x: player.x - viewOriginX,
       y: player.y - viewOriginY
+    };
+  }
+
+  function enemyScreenCenter(enemy) {
+    const localX = enemy.x - viewOriginX;
+    const localY = enemy.y - viewOriginY;
+    const iso = toIsoLocal(localX, localY);
+    return {
+      x: iso.x + tileW / 2,
+      y: iso.y + tileH / 2
     };
   }
 
@@ -294,12 +333,50 @@
       dy
     };
     shots = [...shots, shot];
+    handleShotHits(shot);
     const timeout = setTimeout(() => {
       shots = shots.filter((s) => s.id !== shot.id);
       shotTimeouts.delete(shot.id);
     }, SHOT_DURATION);
     shotTimeouts.set(shot.id, timeout);
     status = 'Bang!';
+  }
+
+  function knockbackEnemy(enemy, angle) {
+    const stepX = Math.sign(Math.cos(angle));
+    const stepY = Math.sign(Math.sin(angle));
+    if (stepX === 0 && stepY === 0) return enemy;
+
+    const targetX = enemy.x + stepX;
+    const targetY = enemy.y + stepY;
+    if (!inBounds(targetX, targetY)) return enemy;
+    if (isBlocked(targetX, targetY)) return enemy;
+    if (isHole(targetX, targetY)) {
+      enemies = enemies.filter((e) => e.id !== enemy.id);
+      return null;
+    }
+    return { ...enemy, x: targetX, y: targetY };
+  }
+
+  function handleShotHits(shot) {
+    const vx = Math.cos(shot.angle);
+    const vy = Math.sin(shot.angle);
+    const len = shot.length;
+    const hitRadius = 18;
+
+    enemies = enemies
+      .map((enemy) => {
+        const center = enemyScreenCenter(enemy);
+        const px = center.x - shot.x;
+        const py = center.y - shot.y;
+        const proj = px * vx + py * vy;
+        if (proj < 0 || proj > len) return enemy;
+        const dist = Math.abs(px * vy - py * vx);
+        if (dist > hitRadius) return enemy;
+        const knocked = knockbackEnemy(enemy, shot.angle);
+        return knocked ?? null;
+      })
+      .filter(Boolean);
   }
 
   refreshView();
@@ -348,6 +425,17 @@
             class="shot"
             style={`left:${shot.x}px; top:${shot.y}px; width:${shot.length}px; transform:rotate(${shot.angle}rad);`}
           />
+        {/each}
+
+        {#each enemies as enemy (enemy.id)}
+          {#if enemy.x >= viewOriginX && enemy.x < viewOriginX + viewSize && enemy.y >= viewOriginY && enemy.y < viewOriginY + viewSize}
+            <div
+              class="enemy"
+              style={`--tx:${toIsoLocal(enemy.x - viewOriginX, enemy.y - viewOriginY).x}px; --ty:${toIsoLocal(enemy.x - viewOriginX, enemy.y - viewOriginY).y}px; z-index:${enemy.x + enemy.y + 8};`}
+            >
+              <div class="enemy-body" />
+            </div>
+          {/if}
         {/each}
 
         <div
