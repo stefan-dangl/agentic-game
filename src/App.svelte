@@ -414,12 +414,9 @@
 
 <main class="app">
   <header>
-    <p class="eyebrow">Tiny isometric playground</p>
-    <h1>Roam the tiles</h1>
-    <p class="lede">
-      A simple isometric grid with a controllable player and solid obstacles. Use WASD
-      or the arrow keys to walk around.
-    </p>
+    <p class="eyebrow">Isometric survival</p>
+    <h1>Cave Survival</h1>
+    <p class="lede">Keep moving, mind the holes, and see how many foes the caverns claim.</p>
   </header>
 
   <section class="world-panel">
@@ -427,11 +424,6 @@
       <div class="game-over">Game Over</div>
     {:else}
       <div class="hud">
-        <span class="pill">WASD / Arrow keys</span>
-        <span class="pill">Obstacles block movement</span>
-        <span class="pill">Space to jump</span>
-        <span class="pill">Holes end the run</span>
-        <span class="pill">Only nearby 8x8 tiles render</span>
         <span class="pill">Kills: {enemiesKilled}</span>
       </div>
 
